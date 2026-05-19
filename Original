@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corrida Maluca 2 — Ascendant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Racing+Sans+One&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f0f;--bg2:#1a1a1a;--bg3:#242424;--border:#2e2e2e;
+  --text:#f0f0f0;--text2:#888;--text3:#444;
+  --yellow:#f5c518;--ydim:#b8960a;--ybg:rgba(245,197,24,0.08);--yborder:rgba(245,197,24,0.22);
+  --red:#e63946;--blue:#3a86ff;--green:#2dc653;--orange:#ff6b35;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100vh;overflow-x:hidden}
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;position:sticky;top:0;z-index:100}
+.header-inner{max-width:720px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:52px}
+.logo{font-family:'Racing Sans One',cursive;font-size:17px;color:var(--yellow);letter-spacing:1px}
+.logo span{color:var(--text2);font-size:11px;font-family:'Barlow Condensed',sans-serif;margin-left:6px}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);display:inline-block;margin-right:4px;transition:background .3s}
+.sync-dot.ok{background:var(--green);animation:pulse 2s infinite}
+.sync-dot.err{background:var(--red)}
+.sync-dot.loading{background:var(--yellow);animation:pulse .6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sync-label{font-size:11px;color:var(--text2);font-family:'Barlow Condensed',sans-serif}
+.nav{background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav-inner{max-width:720px;margin:0 auto;display:flex}
+.nav-btn{flex-shrink:0;padding:11px 16px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:var(--text2);border-bottom:3px solid transparent;margin-bottom:-1px;transition:all .15s;white-space:nowrap}
+.nav-btn.active{color:var(--yellow);border-bottom-color:var(--yellow)}
+.nav-btn:hover:not(.active){color:var(--text);background:rgba(255,255,255,.03)}
+.main{max-width:720px;margin:0 auto;padding:16px 14px 80px}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.card-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);margin-bottom:14px}
+.race-hero{text-align:center;padding:20px 0 16px}
+.race-h1{font-family:'Racing Sans One',cursive;font-size:clamp(22px,5.5vw,32px);color:var(--yellow);letter-spacing:2px}
+.race-sub{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-top:5px}
+.counter-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px}
+.cc{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:11px 6px;text-align:center}
+.cc-emoji{font-size:18px;margin-bottom:3px}
+.cc-name{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase}
+.cc-pts{font-family:'Racing Sans One',cursive;font-size:19px;margin-top:2px}
+.track{background:#141414;border:1px solid #242424;border-radius:12px;padding:12px;margin-bottom:14px}
+.lane{display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:7px;background:rgba(255,255,255,.025);margin-bottom:5px;position:relative;overflow:hidden}
+.lane:last-child{margin-bottom:0}
+.lane::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0,rgba(255,255,255,.05) 10px,transparent 10px,transparent 20px)}
+.lane-rank{font-family:'Racing Sans One',cursive;font-size:14px;min-width:20px;text-align:center;z-index:2}
+.lane-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:#ccc;min-width:68px;z-index:2}
+.lane-bar{flex:1;height:26px;position:relative;z-index:2}
+.bar-bg{position:absolute;inset:0;background:rgba(0,0,0,.5);border-radius:5px;overflow:hidden}
+.bar-fill{height:100%;border-radius:5px;transition:width 1s cubic-bezier(.34,1.56,.64,1);min-width:28px;display:flex;align-items:center;justify-content:flex-end;padding-right:3px}
+.bar-car{font-size:15px;animation:bob .5s ease-in-out infinite alternate}
+@keyframes bob{from{transform:translateY(-2px)}to{transform:translateY(2px)}}
+.lane-pts{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#fff;min-width:48px;text-align:right;z-index:2}
+.lane-pts small{font-size:9px;color:var(--text2);font-weight:400}
+.podium{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:6px}
+.pod{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:12px 6px;text-align:center}
+.pod.p1{border-color:var(--yborder);background:var(--ybg)}
+.pod-medal{font-size:16px;margin-bottom:2px}
+.pod-car{font-size:20px;margin-bottom:3px}
+.pod-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px}
+.pod-score{font-size:10px;color:var(--text2);margin-top:2px}
+.broker-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px}
+.broker-btn{padding:11px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .15s;width:100%;touch-action:manipulation}
+.broker-btn:hover{border-color:var(--text2)}
+.broker-btn.sel{background:rgba(255,255,255,.04)}
+.broker-emoji{font-size:17px}
+.broker-name-txt{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;color:var(--text)}
+.broker-pts-txt{font-size:10px;color:var(--text2);margin-top:1px}
+.date-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.date-row label{font-size:12px;color:var(--text2);white-space:nowrap;font-weight:500}
+.date-row input[type=date]{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 11px;font-size:12px;font-family:'Barlow',sans-serif;flex:1;outline:none}
+.date-row input[type=date]:focus{border-color:var(--yellow)}
+.act-list{display:flex;flex-direction:column}
+.act-row{display:flex;align-items:center;gap:7px;padding:11px 0;border-bottom:1px solid var(--border)}
+.act-row:last-child{border-bottom:none}
+.act-info{flex:1;min-width:0}
+.act-name{font-size:13px;color:var(--text);line-height:1.2}
+.act-obs{font-size:10px;color:var(--text2);margin-top:2px}
+.pts-pill{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;padding:3px 7px;border-radius:20px;background:var(--ybg);color:var(--yellow);border:1px solid var(--yborder);white-space:nowrap;flex-shrink:0}
+.qty-ctrl{display:flex;align-items:center;gap:3px;flex-shrink:0}
+.qb{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--text);line-height:1;font-weight:700;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none}
+.qb:hover{background:rgba(255,255,255,.07)}
+.qb:active{transform:scale(.9)}
+.qv{min-width:24px;text-align:center;font-weight:700;font-size:14px;color:var(--text)}
+.preview{background:var(--ybg);border:1px solid var(--yborder);border-radius:8px;padding:12px 14px;display:none;align-items:center;justify-content:space-between;margin-top:12px}
+.preview.show{display:flex}
+.preview-label{font-size:10px;color:var(--yellow);font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.preview-acts{font-size:10px;color:var(--ydim);margin-top:3px;line-height:1.4}
+.preview-pts{font-family:'Racing Sans One',cursive;font-size:22px;color:var(--yellow)}
+.hist-list{display:flex;flex-direction:column;gap:5px}
+.hist-item{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:11px 13px;display:flex;align-items:flex-start;gap:8px}
+.h-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.h-body{flex:1;min-width:0}
+.h-top{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:2px}
+.h-broker{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px}
+.h-date{font-size:10px;color:var(--text2)}
+.h-via{font-size:9px;color:var(--blue);background:rgba(58,134,255,.1);padding:2px 5px;border-radius:4px;font-weight:700}
+.h-acts{font-size:11px;color:var(--text2);line-height:1.4}
+.h-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
+.h-pts{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--yellow)}
+.status-ok{font-size:9px;color:var(--green);font-weight:600}
+.status-pend{font-size:9px;color:var(--orange);font-weight:600}
+.btn-confirm{padding:4px 9px;border-radius:5px;border:1px solid rgba(45,198,83,.3);background:rgba(45,198,83,.08);color:var(--green);font-size:10px;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;touch-action:manipulation}
+.btn-danger{padding:4px 9px;border-radius:5px;border:1px solid rgba(230,57,70,.3);background:rgba(230,57,70,.08);color:var(--red);font-size:10px;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;touch-action:manipulation}
+.btn-primary{width:100%;padding:13px;background:var(--yellow);border:none;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.5px;text-transform:uppercase;color:#111;transition:opacity .15s;touch-action:manipulation}
+.btn-primary:hover{opacity:.88}
+.btn-primary:active{transform:scale(.98)}
+.empty{text-align:center;padding:24px;color:var(--text3);font-size:12px}
+.lock-screen{text-align:center;padding:40px 20px}
+.lock-icon{font-size:38px;margin-bottom:12px}
+.lock-title{font-family:'Racing Sans One',cursive;font-size:20px;color:var(--yellow);margin-bottom:6px}
+.lock-desc{font-size:12px;color:var(--text2);margin-bottom:20px}
+.pin-input{background:var(--bg3);border:2px solid var(--border);border-radius:9px;color:var(--text);padding:11px 14px;font-size:22px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:8px;text-align:center;width:100%;max-width:180px;outline:none;margin-bottom:12px}
+.pin-input:focus{border-color:var(--yellow)}
+.mini-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.mini-card{background:var(--bg3);border-radius:8px;padding:9px 6px;text-align:center;border:1px solid var(--border)}
+.mini-name{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase}
+.mini-pts{font-family:'Racing Sans One',cursive;font-size:17px;margin-top:2px}
+.pts-table{width:100%;border-collapse:collapse}
+.pts-table th{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);padding:9px 10px;border-bottom:1px solid var(--border);text-align:left}
+.pts-table td{padding:10px 10px;border-bottom:1px solid rgba(46,46,46,.5);font-size:12px;color:var(--text);vertical-align:middle}
+.pts-table tr:last-child td{border-bottom:none}
+.pts-table tr:hover td{background:rgba(255,255,255,.02)}
+.cat-b{display:inline-block;padding:2px 7px;border-radius:20px;font-size:9px;font-weight:700;font-family:'Barlow Condensed',sans-serif}
+.cat-venda{background:rgba(245,197,24,.12);color:var(--yellow)}
+.cat-visita{background:rgba(58,134,255,.12);color:#85b7eb}
+.cat-captacao{background:rgba(45,198,83,.12);color:#5dcaa5}
+.cat-contato{background:rgba(139,92,246,.12);color:#afa9ec}
+.cat-marketing{background:rgba(230,57,70,.12);color:#f09595}
+.pts-num{font-family:'Racing Sans One',cursive;font-size:17px}
+.rules{background:var(--bg3);border-left:3px solid var(--yellow);padding:14px;margin-top:12px}
+.rules h4{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;color:var(--text)}
+.rules ul{list-style:none;display:flex;flex-direction:column;gap:6px}
+.rules li{font-size:11px;color:var(--text2);display:flex;gap:7px;line-height:1.5}
+.rules li::before{content:'▸';color:var(--yellow);flex-shrink:0}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(16px);background:#1a1a1a;color:var(--text);padding:11px 18px;border-radius:9px;font-size:12px;font-weight:500;z-index:999;opacity:0;transition:all .25s;pointer-events:none;border-left:4px solid var(--yellow);max-width:88vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.loading-overlay{position:fixed;inset:0;background:rgba(15,15,15,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:12px}
+.loading-spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--yellow);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-family:'Barlow Condensed',sans-serif;font-size:13px;color:var(--text2)}
+@media(max-width:480px){
+  .counter-grid,.podium,.broker-grid,.mini-grid{grid-template-columns:1fr 1fr}
+  .pts-table th:nth-child(4),.pts-table td:nth-child(4){display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">🏎 Corrida Maluca 2 <span>Ascendant</span></div>
+    <div style="display:flex;align-items:center;gap:4px">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span class="sync-label" id="sync-label">conectando...</span>
+    </div>
+  </div>
+</div>
+
+<div class="nav">
+  <div class="nav-inner">
+    <button class="nav-btn active" onclick="showPanel('corrida',this)">🏁 Corrida</button>
+    <button class="nav-btn" onclick="showPanel('form',this)">📝 Meu Dia</button>
+    <button class="nav-btn" onclick="showPanel('admin',this)">🔐 Admin</button>
+    <button class="nav-btn" onclick="showPanel('tabela',this)">📋 Pontuação</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="panel active" id="panel-corrida">
+    <div class="race-hero">
+      <div class="race-h1">🏎 CORRIDA MALUCA 2 🏎</div>
+      <div class="race-sub" id="race-date">—</div>
+    </div>
+    <div class="counter-grid" id="counter-grid"></div>
+    <div class="track" id="race-track"></div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">🏆 Pódio</div>
+    <div class="podium" id="podium"></div>
+    <div style="text-align:center;margin-top:12px">
+      <button onclick="loadData()" style="background:none;border:1px solid var(--border);color:var(--text2);padding:7px 16px;border-radius:7px;cursor:pointer;font-size:11px;font-family:'Barlow Condensed',sans-serif;font-weight:600">↻ Atualizar placar</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-form">
+    <div class="card">
+      <div class="card-title">Quem sou eu?</div>
+      <div class="broker-grid" id="form-brokers"></div>
+      <div class="date-row">
+        <label>Data:</label>
+        <input type="date" id="form-date">
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Minhas atividades do dia</div>
+      <div id="form-act-list" class="act-list"></div>
+      <div class="preview" id="form-preview">
+        <div>
+          <div class="preview-label">Pronto para enviar</div>
+          <div class="preview-acts" id="form-preview-acts"></div>
+        </div>
+        <div class="preview-pts" id="form-preview-pts"></div>
+      </div>
+      <button class="btn-primary" style="margin-top:12px" onclick="submitForm()">⛽ Enviar relatório do dia</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Meus lançamentos</div>
+      <div id="form-hist"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-admin">
+    <div id="admin-lock" class="lock-screen">
+      <div class="lock-icon">🔐</div>
+      <div class="lock-title">Área do Gestor</div>
+      <div class="lock-desc">Digite o PIN para acessar</div>
+      <input type="password" class="pin-input" id="pin-input" maxlength="4" placeholder="····" oninput="checkPin(this.value)">
+      <br><button class="btn-primary" style="max-width:180px;margin-top:0" onclick="checkPin(document.getElementById('pin-input').value)">Entrar</button>
+    </div>
+    <div id="admin-panel" style="display:none">
+      <div class="card">
+        <div class="card-title">🛡️ Lançamento direto — gestor</div>
+        <div class="broker-grid" id="admin-brokers"></div>
+        <div class="date-row"><label>Data:</label><input type="date" id="admin-date"></div>
+        <div id="admin-act-list" class="act-list"></div>
+        <div class="preview" id="admin-preview">
+          <div>
+            <div class="preview-label">Total a confirmar</div>
+            <div class="preview-acts" id="admin-preview-acts"></div>
+          </div>
+          <div class="preview-pts" id="admin-preview-pts"></div>
+        </div>
+        <button class="btn-primary" style="margin-top:12px" onclick="submitAdmin()">⚡ Confirmar lançamento</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Todos os lançamentos — confirmar / remover</div>
+        <div class="mini-grid" id="admin-mini"></div>
+        <div id="admin-hist"></div>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button onclick="lockAdmin()" style="background:none;border:1px solid var(--border);color:var(--text2);padding:8px 18px;border-radius:7px;cursor:pointer;font-size:12px">Sair do admin</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-tabela">
+    <div class="card">
+      <table class="pts-table">
+        <thead><tr>
+          <th style="width:38%">Atividade</th>
+          <th style="width:18%">Categoria</th>
+          <th style="width:12%;text-align:right">Pts</th>
+          <th style="width:32%">Observação</th>
+        </tr></thead>
+        <tbody id="pts-tbody"></tbody>
+      </table>
+    </div>
+    <div class="rules">
+      <h4>🚗 Regras da Corrida Maluca 2</h4>
+      <ul>
+        <li>Duração de 1 mês — pontos acumulam do 1º ao último dia</li>
+        <li>Fechamento de venda vale 100 pts — o turbo da corrida!</li>
+        <li>30 contatos/dia comprovados = 15 pts (máx 2x ao dia)</li>
+        <li>Corretores preenchem o formulário na aba "Meu Dia"</li>
+        <li>Gestor confirma os lançamentos na aba Admin (com PIN)</li>
+        <li>Só pontos confirmados pelo gestor entram no placar</li>
+        <li>Posts e Reels precisam de print ou link para validar</li>
+        <li>Em caso de empate, ganha quem tiver mais fechamentos</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="loading-overlay" id="loading-overlay" style="display:none">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loading-text">Salvando...</div>
+</div>
+
+<script>
+// ╔══════════════════════════════════════════════════════╗
+// ║   COLE A URL DO SEU GOOGLE APPS SCRIPT AQUI:        ║
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxljNy_54RT9ETdXwm9-dV6mwdQJttnwLFw7oLFvYBI_P50rxqcP9lS38SAZxStEIgXOA/exec';
+// ║   Exemplo:                                           ║
+// ║   'https://script.google.com/macros/s/ABC.../exec'  ║
+// ╚══════════════════════════════════════════════════════╝
+
+const ADMIN_PIN = '1234';
+
+const BROKERS = [
+  {id:'lais',    name:'Laís',        car:'🚗', color:'#e63946'},
+  {id:'wander',  name:'Wander',      car:'🏎', color:'#3a86ff'},
+  {id:'anabea',  name:'Ana Beatriz', car:'🚙', color:'#2dc653'},
+  {id:'damasio', name:'Damásio',     car:'🚕', color:'#ff6b35'},
+];
+
+const ACTS = [
+  {id:'fechamento', name:'Fechamento de venda/locação', pts:100,cat:'venda',   catL:'Venda 🏆', obs:'Comprovação obrigatória',       limit:null},
+  {id:'visita',     name:'Visita realizada',             pts:15, cat:'visita',  catL:'Visita',   obs:'Máx 5 por dia',                 limit:5},
+  {id:'captacao',   name:'Captação de imóvel',           pts:10, cat:'captacao',catL:'Captação', obs:'Máx 3 por dia',                 limit:3},
+  {id:'contatos30', name:'30 contatos realizados',       pts:15, cat:'contato', catL:'Contato',  obs:'Máx 2x por dia (60 contatos)', limit:2},
+  {id:'proposta',   name:'Proposta enviada',              pts:8,  cat:'visita',  catL:'Visita',   obs:'Ilimitado',                    limit:null},
+  {id:'avaliacao',  name:'Avaliação de imóvel',           pts:10, cat:'captacao',catL:'Captação', obs:'Máx 2 por dia',                limit:2},
+  {id:'post_ig',    name:'Post no Instagram',             pts:5,  cat:'marketing',catL:'Marketing',obs:'Máx 2/dia — enviar print',    limit:2},
+  {id:'reels',      name:'Reels/Stories com imóvel',     pts:8,  cat:'marketing',catL:'Marketing',obs:'Máx 2/dia — enviar print',    limit:2},
+  {id:'indicacao',  name:'Lead indicado confirmado',      pts:12, cat:'contato', catL:'Contato',  obs:'Ilimitado',                    limit:null},
+];
+
+let cache = { entries: [], scores: {lais:0,wander:0,anabea:0,damasio:0} };
+let formBroker=null, adminBroker=null, formQty={}, adminQty={}, adminUnlocked=false;
+const configured = true;
+
+async function api(action, body={}) {
+  if(!configured) throw new Error('not_configured');
+  const res = await fetch(SCRIPT_URL, {
+    method:'POST',
+    body: JSON.stringify({action, ...body}),
+    headers:{'Content-Type':'text/plain'},
+  });
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data;
+}
+
+async function loadData() {
+  setSyncState('loading','sincronizando...');
+  try {
+    const data = await api('getAll');
+    cache.entries = data.entries || [];
+    recalcScores();
+    renderAll();
+    setSyncState('ok','ao vivo');
+  } catch(e) {
+    setSyncState('err', e.message==='not_configured' ? 'configure o script' : 'erro de conexão');
+  }
+}
+
+function recalcScores() {
+  cache.scores = {lais:0,wander:0,anabea:0,damasio:0};
+  cache.entries.forEach(e => {
+    const conf = e.confirmed===true||String(e.confirmed).toUpperCase()==='TRUE';
+    if(conf) cache.scores[e.brokerId] = (cache.scores[e.brokerId]||0) + Number(e.pts);
+  });
+}
+
+function isConf(e){ return e.confirmed===true||String(e.confirmed).toUpperCase()==='TRUE'; }
+function setSyncState(s,l){ document.getElementById('sync-dot').className='sync-dot '+s; document.getElementById('sync-label').textContent=l; }
+function showLoading(t){ document.getElementById('loading-text').textContent=t; document.getElementById('loading-overlay').style.display='flex'; }
+function hideLoading(){ document.getElementById('loading-overlay').style.display='none'; }
+function today(){ return new Date().toISOString().split('T')[0]; }
+function fmtDate(d){ if(!d)return''; try{const[y,m,dd]=d.split('-');return`${dd}/${m}`;}catch(e){return d;} }
+
+function renderTrack() {
+  const sorted=[...BROKERS].sort((a,b)=>(cache.scores[b.id]||0)-(cache.scores[a.id]||0));
+  const maxPts=Math.max(...BROKERS.map(b=>cache.scores[b.id]||0),1);
+  const medals=['🥇','🥈','🥉','4️⃣'];
+  document.getElementById('counter-grid').innerHTML=BROKERS.map(b=>`
+    <div class="cc"><div class="cc-emoji">${b.car}</div>
+    <div class="cc-name">${b.name.split(' ')[0]}</div>
+    <div class="cc-pts" style="color:${b.color}">${cache.scores[b.id]||0}</div>
+    <div style="font-size:9px;color:var(--text3);font-family:'Barlow Condensed',sans-serif">pts</div></div>`).join('');
+  document.getElementById('race-track').innerHTML=sorted.map((b,i)=>{
+    const pts=cache.scores[b.id]||0;
+    const pct=Math.min((pts/(maxPts*1.1||100))*100,88);
+    return`<div class="lane">
+      <div class="lane-rank" style="color:${b.color}">${medals[i]}</div>
+      <div class="lane-name" style="color:${b.color}">${b.name.split(' ')[0]}</div>
+      <div class="lane-bar"><div class="bar-bg"><div class="bar-fill" style="width:${Math.max(pct,8)}%;background:${b.color}18;border:.5px solid ${b.color}35">
+        <span class="bar-car">${b.car}</span></div></div></div>
+      <div class="lane-pts">${pts} <small>pts</small></div></div>`;
+  }).join('');
+  const top3=sorted.slice(0,3);
+  const pC=['var(--yellow)','#9ca3af','#cd7f32'],pL=['🥇 1º','🥈 2º','🥉 3º'];
+  document.getElementById('podium').innerHTML=top3.map((b,i)=>`
+    <div class="pod ${i===0?'p1':''}">
+      <div class="pod-medal" style="color:${pC[i]}">${pL[i]}</div>
+      <div class="pod-car">${b.car}</div>
+      <div class="pod-name" style="color:${b.color}">${b.name}</div>
+      <div class="pod-score">${cache.scores[b.id]||0} pts</div></div>`).join('');
+  document.getElementById('race-date').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+}
+
+function renderBrokerBtns(cId,selId,fn){
+  document.getElementById(cId).innerHTML=BROKERS.map(b=>`
+    <button class="broker-btn ${selId===b.id?'sel':''}" style="${selId===b.id?`border-color:${b.color}`:''}" onclick="${fn}('${b.id}')">
+      <span class="broker-emoji">${b.car}</span>
+      <div><div class="broker-name-txt" style="${selId===b.id?`color:${b.color}`:''}">${b.name}</div>
+      <div class="broker-pts-txt">${cache.scores[b.id]||0} pts</div></div></button>`).join('');
+}
+
+function renderActRows(cId,qObj,fn){
+  document.getElementById(cId).innerHTML=ACTS.map(a=>`
+    <div class="act-row">
+      <div class="act-info"><div class="act-name">${a.name}</div><div class="act-obs">${a.obs}</div></div>
+      <div class="pts-pill">+${a.pts}</div>
+      <div class="qty-ctrl">
+        <button class="qb" onclick="${fn}('${a.id}',-1)">−</button>
+        <span class="qv" id="${cId}-q-${a.id}">${qObj[a.id]||0}</span>
+        <button class="qb" onclick="${fn}('${a.id}',1)">+</button>
+      </div></div>`).join('');
+}
+
+function calcPts(q){return ACTS.reduce((s,a)=>s+(q[a.id]||0)*a.pts,0);}
+function calcSum(q){return ACTS.filter(a=>(q[a.id]||0)>0).map(a=>`${a.name} ×${q[a.id]}`).join(' · ');}
+function updPrev(q,pId,aId,vId){
+  const pts=calcPts(q),el=document.getElementById(pId);
+  if(pts>0){el.classList.add('show');document.getElementById(aId).textContent=calcSum(q);document.getElementById(vId).textContent=`+${pts} pts`;}
+  else el.classList.remove('show');
+}
+
+function selectFormBroker(id){formBroker=id;renderBrokerBtns('form-brokers',id,'selectFormBroker');renderFormHist();}
+function changeFormQty(id,d){formQty[id]=Math.max(0,(formQty[id]||0)+d);const el=document.getElementById('form-act-list-q-'+id);if(el)el.textContent=formQty[id];updPrev(formQty,'form-preview','form-preview-acts','form-preview-pts');}
+
+async function submitForm(){
+  if(!configured){showToast('⚠️ Plataforma não configurada ainda.');return;}
+  if(!formBroker){showToast('⚠️ Selecione seu nome!');return;}
+  const pts=calcPts(formQty);
+  if(!pts){showToast('⚠️ Adicione pelo menos uma atividade!');return;}
+  showLoading('Enviando relatório...');
+  try{
+    await api('addEntry',{brokerId:formBroker,pts,date:document.getElementById('form-date').value||today(),summary:calcSum(formQty),source:'corretor',confirmed:false});
+    formQty={};
+    await loadData();
+    hideLoading();
+    renderActRows('form-act-list',formQty,'changeFormQty');
+    updPrev(formQty,'form-preview','form-preview-acts','form-preview-pts');
+    showToast('📝 Relatório enviado! Aguardando confirmação do gestor.');
+  }catch(e){hideLoading();showToast('❌ Erro ao enviar. Tente novamente.');}
+}
+
+function renderFormHist(){
+  const el=document.getElementById('form-hist');
+  const items=cache.entries.filter(h=>h.brokerId===formBroker);
+  if(!items.length){el.innerHTML='<div class="empty">Nenhum lançamento ainda</div>';return;}
+  el.innerHTML='<div class="hist-list">'+[...items].reverse().map(h=>{
+    const b=BROKERS.find(x=>x.id===h.brokerId);
+    const conf=isConf(h);
+    return`<div class="hist-item">
+      <div class="h-dot" style="background:${b.color}"></div>
+      <div class="h-body"><div class="h-top"><span class="h-date">${fmtDate(h.date)}</span>
+        <span class="${conf?'status-ok':'status-pend'}">${conf?'✓ Confirmado':'⏳ Aguardando gestor'}</span></div>
+        <div class="h-acts">${h.summary}</div></div>
+      <div class="h-right"><div class="h-pts">+${h.pts}</div></div></div>`;
+  }).join('')+'</div>';
+}
+
+function checkPin(val){
+  if(val.length===4){
+    if(val===ADMIN_PIN){adminUnlocked=true;document.getElementById('admin-lock').style.display='none';document.getElementById('admin-panel').style.display='block';renderAdminPanel();}
+    else{showToast('❌ PIN incorreto!');document.getElementById('pin-input').value='';}
+  }
+}
+function lockAdmin(){adminUnlocked=false;document.getElementById('admin-lock').style.display='block';document.getElementById('admin-panel').style.display='none';document.getElementById('pin-input').value='';}
+function selectAdminBroker(id){adminBroker=id;renderBrokerBtns('admin-brokers',id,'selectAdminBroker');}
+function changeAdminQty(id,d){adminQty[id]=Math.max(0,(adminQty[id]||0)+d);const el=document.getElementById('admin-act-list-q-'+id);if(el)el.textContent=adminQty[id];updPrev(adminQty,'admin-preview','admin-preview-acts','admin-preview-pts');}
+
+async function submitAdmin(){
+  if(!configured){showToast('⚠️ Plataforma não configurada.');return;}
+  if(!adminBroker){showToast('⚠️ Selecione o corretor!');return;}
+  const pts=calcPts(adminQty);
+  if(!pts){showToast('⚠️ Adicione pelo menos uma atividade!');return;}
+  showLoading('Confirmando pontos...');
+  try{
+    await api('addEntry',{brokerId:adminBroker,pts,date:document.getElementById('admin-date').value||today(),summary:calcSum(adminQty),source:'admin',confirmed:true});
+    adminQty={};
+    await loadData();
+    hideLoading();
+    renderAdminPanel();
+    showToast(`⛽ +${pts} pts confirmados!`);
+  }catch(e){hideLoading();showToast('❌ Erro ao salvar.');}
+}
+
+async function confirmEntry(rowId){
+  showLoading('Confirmando...');
+  try{await api('confirmEntry',{rowId});await loadData();hideLoading();renderAdminPanel();showToast('✅ Pontos confirmados!');}
+  catch(e){hideLoading();showToast('❌ Erro.');}
+}
+async function deleteEntry(rowId){
+  if(!confirm('Remover este lançamento?'))return;
+  showLoading('Removendo...');
+  try{await api('deleteEntry',{rowId});await loadData();hideLoading();renderAdminPanel();showToast('🗑️ Lançamento removido');}
+  catch(e){hideLoading();showToast('❌ Erro.');}
+}
+
+function renderAdminPanel(){
+  if(!adminUnlocked)return;
+  renderBrokerBtns('admin-brokers',adminBroker,'selectAdminBroker');
+  renderActRows('admin-act-list',adminQty,'changeAdminQty');
+  updPrev(adminQty,'admin-preview','admin-preview-acts','admin-preview-pts');
+  document.getElementById('admin-mini').innerHTML=BROKERS.map(b=>`
+    <div class="mini-card"><div class="mini-name">${b.name.split(' ')[0]}</div>
+    <div class="mini-pts" style="color:${b.color}">${cache.scores[b.id]||0}</div>
+    <div style="font-size:9px;color:var(--text3);font-family:'Barlow Condensed',sans-serif">pts</div></div>`).join('');
+  const hEl=document.getElementById('admin-hist');
+  if(!cache.entries.length){hEl.innerHTML='<div class="empty">Nenhum lançamento</div>';return;}
+  hEl.innerHTML='<div class="hist-list">'+[...cache.entries].reverse().map(h=>{
+    const b=BROKERS.find(x=>x.id===h.brokerId);
+    const conf=isConf(h);
+    const sb=!conf?`<button class="btn-confirm" onclick="confirmEntry('${h.rowId}')">✓ Confirmar</button>`:'<span class="status-ok">✓ Confirmado</span>';
+    return`<div class="hist-item">
+      <div class="h-dot" style="background:${b.color}"></div>
+      <div class="h-body"><div class="h-top">
+        <span class="h-broker" style="color:${b.color}">${b.name}</span>
+        <span class="h-date">${fmtDate(h.date)}</span>
+        ${h.source==='corretor'?'<span class="h-via">formulário</span>':''}
+      </div><div class="h-acts">${h.summary}</div></div>
+      <div class="h-right"><div class="h-pts">+${h.pts}</div>${sb}
+        <button class="btn-danger" onclick="deleteEntry('${h.rowId}')">✕</button>
+      </div></div>`;
+  }).join('')+'</div>';
+}
+
+function renderPtsTable(){
+  document.getElementById('pts-tbody').innerHTML=ACTS.map(a=>`
+    <tr><td>${a.name}</td>
+    <td><span class="cat-b cat-${a.cat}">${a.catL}</span></td>
+    <td style="text-align:right"><span class="pts-num" style="color:${a.cat==='venda'?'var(--yellow)':'var(--text)'}">${a.pts}</span></td>
+    <td style="color:var(--text2);font-size:11px">${a.obs}</td></tr>`).join('');
+}
+
+function showPanel(name,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='admin'&&adminUnlocked)renderAdminPanel();
+}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200);}
+function renderAll(){
+  renderTrack();renderBrokerBtns('form-brokers',formBroker,'selectFormBroker');
+  renderActRows('form-act-list',formQty,'changeFormQty');
+  updPrev(formQty,'form-preview','form-preview-acts','form-preview-pts');
+  renderFormHist();if(adminUnlocked)renderAdminPanel();renderPtsTable();
+  const fd=document.getElementById('form-date'),ad=document.getElementById('admin-date');
+  if(!fd.value)fd.value=today();if(!ad.value)ad.value=today();
+}
+
+renderAll();
+if(configured){
+  loadData();
+  setInterval(loadData,30000);
+} else {
+  setSyncState('err','configure o script');
+  showToast('⚠️ Configure a URL do Google Apps Script no arquivo HTML');
+}
+</script>
+</body>
+</html>
